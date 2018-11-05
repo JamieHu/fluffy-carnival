@@ -1,0 +1,104 @@
+package FacePredict;
+
+import java.io.File;
+
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.ml.Ml;
+import org.opencv.ml.RTrees;
+
+import open.GetExcelInfo;
+
+public class PredictTest {
+	static{System.loadLibrary(Core.NATIVE_LIBRARY_NAME);}
+	
+	public static Mat TrainData(String src)//将500张图片（500个500*500的Mat）存入一个大Mat（500*（500*500*3））中
+	{	Mat trainData= new Mat(500,500*500*3,5);//生成大Mat
+		for (int i =1;i<=500;i++)
+		{
+			Mat img=Imgcodecs.imread(src+i+".jpg");//读图片
+			for (int j=0;j<500;j++)
+				for (int k =0;k<500;k++)
+				{
+					double a []=img.get(j,k);//得到一个像素（RGB三通道）
+					trainData.put(i-1, 500*3*j+k*3,a );//将图片的像素点放入大Mat中
+			
+				}	
+			
+		}
+		return trainData;//返回大矩阵
+	}
+	
+	public static Mat getLabels()//读excel中的得分
+	{	
+		Mat labels=new Mat(500,1,5);
+		GetExcelInfo obj = new GetExcelInfo();
+		File file = new File("F:\\dataset\\Rating_Collection\\Attractiveness label.xls");
+		String []grade=obj.readExcel(file);
+		for (int i =0;i<500;i++)
+		{	
+			labels.put(i, 0, Double.valueOf(grade[i]));
+		
+		}
+		return labels;//返回一个500*1的labels
+	}	
+	
+	public static Mat gettestdata(String src)//得到给定新图片的mat矩阵
+	{
+		Mat img=Imgcodecs.imread(src);
+		Mat testdata=new Mat(1,500*500*3,5);
+		for (int j=0;j<500;j++)
+			for (int k =0;k<500;k++)
+			{
+				double a []=img.get(j,k);
+				//System.out.println(a[0]);
+				testdata.put(0, 500*3*j+k*3,a)	;
+			
+			}
+		return testdata;//返回新图片的mat（1*（500*500*3））
+	}
+	public double getPredict(String src)//进行预测
+	{
+		RTrees rtrees=RTrees.create();
+		rtrees=RTrees.load("src/class");//读入分类器
+		Mat testdata=gettestdata(src);//读入新图片
+		double grade=rtrees.predict(testdata);//调用rtrees的predicet函数得到打分
+		return grade;//返回分数
+	}
+	public static void main(String[] args) {
+		String str="F:\\dataset\\Data_newcut\\SCUT-FBP-";
+		RTrees rtrees=RTrees.create();//生成随机森林训练器
+		Mat traindata=TrainData(str);//得到traindata
+		Mat labels=getLabels();//得到打分
+	
+		/*rtrees.setMaxDepth(500);    
+        rtrees.setMinSampleCount(500);    
+        rtrees.setRegressionAccuracy(0.f);    
+        rtrees.setUseSurrogates(false);    
+        rtrees.setMaxCategories(500);    
+        rtrees.setPriors(new Mat());    
+        rtrees.setCalculateVarImportance(false);    
+        rtrees.setActiveVarCount(1);    
+        rtrees.setTermCriteria(new TermCriteria(TermCriteria.MAX_ITER, 500, 0));   
+		rtrees.setCVFolds(1);*/
+        
+		rtrees.train(traindata,Ml.ROW_SAMPLE,labels);//根据数据和打分训练训练器
+        rtrees.save("src/class");//保存训练器
+       /* Mat testdata1=gettestdata("F:\\dataset\\Data_newcut\\SCUT-FBP-458.jpg");//2.6
+		double grade1=rtrees.predict(testdata1);
+		Mat testdata2=gettestdata("F:\\dataset\\Data_newcut\\SCUT-FBP-459.jpg");//4.5
+		double grade2=rtrees.predict(testdata2);*/
+       // RTrees rtrees1=RTrees.load("src/class");
+        /*for (int i=450;i<=500;i++)
+        {
+        	Mat testdata1=gettestdata("F:\\dataset\\Data_newcut\\SCUT-FBP-"+i+".jpg");//2.6
+    		double grade1=rtrees.predict(testdata1);
+    		System.out.println(grade1);
+        }*/
+        
+		//System.out.println(grade2);
+
+	}
+
+}
