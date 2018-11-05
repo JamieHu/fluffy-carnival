@@ -1,0 +1,48 @@
+package FacePredict;
+
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Rect;
+import org.opencv.core.Size;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.CascadeClassifier;
+
+public class PreCutImage {
+	static{System.loadLibrary(Core.NATIVE_LIBRARY_NAME);}
+	
+	public static String imageCut(String imagePath,String outFile ){
+	    	
+	    	
+	        //原始图像
+	        Mat image = Imgcodecs.imread(imagePath);
+	       
+	        CascadeClassifier faceDetector = new CascadeClassifier(
+	                "F:\\workspace\\OpenCv\\resources\\haarcascades\\haarcascade_frontalface_alt2.xml");
+
+	        // 在图片中检测人脸
+	        MatOfRect faceDetections = new MatOfRect();
+
+	        faceDetector.detectMultiScale(image, faceDetections);
+	       // System.out.println(image.empty());
+	        Rect[] rects = faceDetections.toArray();
+
+	        Rect rect = rects[0];//把识别到的第一个人脸记录下位置
+
+	        Mat sub = image.submat(rect);  //裁剪人脸
+	   
+
+	        Mat mat = new Mat();
+	        Size size = new Size(500, 500);
+	        Imgproc.resize(sub, mat, size);//将人脸格式化，统一成500*500的mat
+
+	        Imgcodecs.imwrite(outFile, mat);
+	       // System.out.println(String.format("图片裁切成功，裁切后图片文件为： %s", outFile));
+	        return outFile;//返回图片
+	    }
+	public static  void main(String[] args)
+	{
+		//imageCut("C:\\Users\\hp\\Desktop\\490323347096969236.jpg","src/photo.jpg");
+	}
+}
